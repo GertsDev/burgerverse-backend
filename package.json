@@ -1,7 +1,7 @@
 {
-  "name": "g-grab_backend",
+  "name": "burgerverse-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend for Burgerverse application",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
