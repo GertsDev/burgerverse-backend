@@ -16,4 +16,4 @@ venv/
 *.swp
 .DS_Store
 .cursor
-
+node_modules
