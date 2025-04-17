@@ -1,7 +1,11 @@
-const express = require('express');
+import dotenv from 'dotenv';
+import express from 'express';
+import mongoose, { Document, Schema } from 'mongoose';
+
+dotenv.config();
+
+// Use express.Router() with no generics
 const router = express.Router();
-const mongoose = require('mongoose');
-require('dotenv').config();
 
 // Connect to MongoDB
 const connectDB = async () => {
@@ -15,12 +19,29 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
-
-// Call the connect function
 connectDB();
 
+// --- Mongoose Schema & Models ---
+
+// Order Type
+interface OrderType extends Document {
+  _id: string;
+  ingredients: string[];
+  status: 'done' | 'pending' | 'created';
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  number: number;
+}
+
+// Counter Type
+interface CounterType extends Document {
+  name: string;
+  count: number;
+}
+
 // Define Order Schema
-const orderSchema = new mongoose.Schema(
+const orderSchema = new Schema<OrderType>(
   {
     _id: String,
     ingredients: [String],
@@ -38,7 +59,7 @@ const orderSchema = new mongoose.Schema(
     timestamps: true,
     collection: 'orders',
     toJSON: {
-      transform: function (doc, ret) {
+      transform: (doc, ret) => {
         ret.createdAt = ret.createdAt.toISOString();
         ret.updatedAt = ret.updatedAt.toISOString();
         return ret;
@@ -46,24 +67,14 @@ const orderSchema = new mongoose.Schema(
     },
   }
 );
+const Order = mongoose.model<OrderType>('Order', orderSchema);
 
-// Create Order model
-const Order = mongoose.model('Order', orderSchema);
-
-// Define counter schema for generating order numbers
-const counterSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  count: {
-    type: Number,
-    default: 74235,
-  },
+// Counter schema for generating order numbers
+const counterSchema = new Schema<CounterType>({
+  name: { type: String, required: true, unique: true },
+  count: { type: Number, default: 74235 },
 });
-
-const Counter = mongoose.model('Counter', counterSchema);
+const Counter = mongoose.model<CounterType>('Counter', counterSchema);
 
 // Seed initial data
 const seedInitialData = async () => {
@@ -73,12 +84,10 @@ const seedInitialData = async () => {
       console.log('Orders collection already has data, skipping seed');
       return;
     }
-
     const counterExists = await Counter.findOne({ name: 'orderNumber' });
     if (!counterExists) {
       await Counter.create({ name: 'orderNumber', count: 74235 });
     }
-
     const initialOrders = [
       {
         _id: '67f89d6be8e61d001cec1c9f',
@@ -92,38 +101,33 @@ const seedInitialData = async () => {
         ],
         status: 'done',
         name: 'Gerts space spicy люминесцентный бургер',
-        createdAt: '2025-04-11T04:41:15.540Z',
-        updatedAt: '2025-04-11T04:41:16.292Z',
+        createdAt: new Date('2025-04-11T04:41:15.540Z'),
+        updatedAt: new Date('2025-04-11T04:41:16.292Z'),
         number: 74235,
       },
     ];
-
     await Order.insertMany(initialOrders);
     console.log('Initial orders data seeded successfully');
   } catch (error) {
     console.error('Error seeding initial orders data:', error);
   }
 };
-
-// Call the seed function
 seedInitialData();
+
+// --- Routes ---
 
 // GET all orders
 router.get('/all', async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 }).lean();
-
     const total = await Order.countDocuments();
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-
     const totalToday = await Order.countDocuments({
       createdAt: { $gte: today, $lt: tomorrow },
     });
-
     res.json({
       success: true,
       orders: orders.map((order) => ({
@@ -146,7 +150,6 @@ router.get('/all', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { ingredients } = req.body;
-
     if (
       !ingredients ||
       !Array.isArray(ingredients) ||
@@ -157,21 +160,17 @@ router.post('/', async (req, res) => {
         message: 'Invalid ingredients array',
       });
     }
-
-    // Validate that all ingredients are strings
     if (!ingredients.every((id) => typeof id === 'string')) {
       return res.status(400).json({
         success: false,
         message: 'All ingredients must be string IDs',
       });
     }
-
     const counter = await Counter.findOneAndUpdate(
       { name: 'orderNumber' },
       { $inc: { count: 1 } },
       { new: true, upsert: true }
     );
-
     const newOrder = new Order({
       _id: new mongoose.Types.ObjectId().toString(),
       ingredients,
@@ -179,9 +178,7 @@ router.post('/', async (req, res) => {
       name: 'Custom Burger',
       number: counter.count,
     });
-
     await newOrder.save();
-
     res.status(200).json({
       success: true,
       name: newOrder.name,
@@ -203,16 +200,14 @@ router.post('/', async (req, res) => {
 router.get('/:number', async (req, res) => {
   try {
     const order = await Order.findOne({
-      number: parseInt(req.params.number),
+      number: parseInt(req.params.number, 10),
     }).lean();
-
     if (!order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found',
       });
     }
-
     res.json({
       success: true,
       orders: [
@@ -231,4 +226,4 @@ router.get('/:number', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
