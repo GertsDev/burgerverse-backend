@@ -7,19 +7,19 @@ dotenv.config();
 // Use express.Router() with no generics
 const router = express.Router();
 
-// Connect to MongoDB
-const connectDB = async () => {
-  try {
-    await mongoose.connect(
-      process.env.MONGO_URI || 'mongodb://localhost:27017/burger-app'
-    );
-    console.log('MongoDB connected successfully');
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
-  }
-};
-connectDB();
+// // Connect to MongoDB
+// const connectDB = async () => {
+//   try {
+//     await mongoose.connect(
+//       process.env.MONGO_URI || 'mongodb://localhost:27017/burger-app'
+//     );
+//     console.log('MongoDB connected successfully');
+//   } catch (err) {
+//     console.error('MongoDB connection error:', err);
+//     process.exit(1);
+//   }
+// };
+// connectDB();
 
 // --- Mongoose Schema & Models ---
 
