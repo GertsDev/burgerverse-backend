@@ -1,120 +1,8 @@
-import dotenv from 'dotenv';
 import express from 'express';
-import mongoose, { Document, Schema } from 'mongoose';
+import { Counter } from '../models/Counter';
+import { Order } from '../models/Order';
 
-dotenv.config();
-
-// Use express.Router() with no generics
 const router = express.Router();
-
-// // Connect to MongoDB
-// const connectDB = async () => {
-//   try {
-//     await mongoose.connect(
-//       process.env.MONGO_URI || 'mongodb://localhost:27017/burger-app'
-//     );
-//     console.log('MongoDB connected successfully');
-//   } catch (err) {
-//     console.error('MongoDB connection error:', err);
-//     process.exit(1);
-//   }
-// };
-// connectDB();
-
-// --- Mongoose Schema & Models ---
-
-// Order Type
-interface OrderType extends Document {
-  _id: string;
-  ingredients: string[];
-  status: 'done' | 'pending' | 'created';
-  name: string;
-  createdAt: Date;
-  updatedAt: Date;
-  number: number;
-}
-
-// Counter Type
-interface CounterType extends Document {
-  name: string;
-  count: number;
-}
-
-// Define Order Schema
-const orderSchema = new Schema<OrderType>(
-  {
-    _id: String,
-    ingredients: [String],
-    status: {
-      type: String,
-      enum: ['done', 'pending', 'created'],
-      default: 'created',
-    },
-    name: String,
-    createdAt: Date,
-    updatedAt: Date,
-    number: Number,
-  },
-  {
-    timestamps: true,
-    collection: 'orders',
-    toJSON: {
-      transform: (doc, ret) => {
-        ret.createdAt = ret.createdAt.toISOString();
-        ret.updatedAt = ret.updatedAt.toISOString();
-        return ret;
-      },
-    },
-  }
-);
-const Order = mongoose.model<OrderType>('Order', orderSchema);
-
-// Counter schema for generating order numbers
-const counterSchema = new Schema<CounterType>({
-  name: { type: String, required: true, unique: true },
-  count: { type: Number, default: 74235 },
-});
-const Counter = mongoose.model<CounterType>('Counter', counterSchema);
-
-// Seed initial data
-const seedInitialData = async () => {
-  try {
-    const count = await Order.countDocuments();
-    if (count > 0) {
-      console.log('Orders collection already has data, skipping seed');
-      return;
-    }
-    const counterExists = await Counter.findOne({ name: 'orderNumber' });
-    if (!counterExists) {
-      await Counter.create({ name: 'orderNumber', count: 74235 });
-    }
-    const initialOrders = [
-      {
-        _id: '67f89d6be8e61d001cec1c9f',
-        ingredients: [
-          '643d69a5c3f7b9001cfa093c',
-          '643d69a5c3f7b9001cfa093e',
-          '643d69a5c3f7b9001cfa0943',
-          '643d69a5c3f7b9001cfa0943',
-          '643d69a5c3f7b9001cfa0942',
-          '643d69a5c3f7b9001cfa093c',
-        ],
-        status: 'done',
-        name: 'Gerts space spicy люминесцентный бургер',
-        createdAt: new Date('2025-04-11T04:41:15.540Z'),
-        updatedAt: new Date('2025-04-11T04:41:16.292Z'),
-        number: 74235,
-      },
-    ];
-    await Order.insertMany(initialOrders);
-    console.log('Initial orders data seeded successfully');
-  } catch (error) {
-    console.error('Error seeding initial orders data:', error);
-  }
-};
-seedInitialData();
-
-// --- Routes ---
 
 // GET all orders
 router.get('/all', async (req, res) => {
@@ -172,7 +60,7 @@ router.post('/', async (req, res) => {
       { new: true, upsert: true }
     );
     const newOrder = new Order({
-      _id: new mongoose.Types.ObjectId().toString(),
+      _id: new (require('mongoose').Types.ObjectId)().toString(),
       ingredients,
       status: 'created',
       name: 'Custom Burger',
