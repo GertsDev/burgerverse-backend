@@ -2,11 +2,15 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
+import './db';
 import authRouter from './routes/auth';
 import ingredientsRouter from './routes/ingredients';
 import ordersRouter from './routes/orders';
 
 dotenv.config();
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
