@@ -10,6 +10,7 @@ if (!process.env.JWT_SECRET) {
 if (!process.env.JWT_REFRESH_SECRET) {
   throw new Error('JWT_REFRESH_SECRET is not defined in environment variables');
 }
+process.env.MONGODB_URL ?? '';
 
 export const JWT_SECRET = process.env.JWT_SECRET;
 export const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;

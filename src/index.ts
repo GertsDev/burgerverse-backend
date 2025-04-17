@@ -15,11 +15,25 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+const MONGO_URI =
+  process.env.MONGO_URI ||
+  process.env.MONGO_URL ||
+  process.env.MONGO_PUBLIC_URL ||
+  '';
+
+if (!MONGO_URI) {
+  console.error('✖️  No Mongo connection string found in env');
+  process.exit(1);
+}
+
 // MongoDB connection
 mongoose
-  .connect(process.env.MONGO_URI as string)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((err: Error) => console.error('MongoDB connection error:', err));
+  .connect(MONGO_URI)
+  .then(() => console.log('✅  MongoDB connected'))
+  .catch((err) => {
+    console.error('✖️  MongoDB connection error:', err);
+    process.exit(1);
+  });
 
 // API routes
 app.use('/api/ingredients', ingredientsRouter);
