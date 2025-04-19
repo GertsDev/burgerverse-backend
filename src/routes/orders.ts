@@ -1,6 +1,8 @@
 import express from 'express';
 import { Counter } from '../models/Counter';
+import { InProgressOrder } from '../models/InProgressOrders';
 import { Order } from '../models/Order';
+import { ReadyOrder } from '../models/ReadyOrders';
 
 const router = express.Router();
 
@@ -112,6 +114,37 @@ router.get('/:number', async (req, res) => {
       message: 'Error fetching order',
     });
   }
+});
+
+// POST in progress orders
+router.post('/in-progress', async (req, res) => {
+  try {
+    const { orderData } = req.body;
+    if (!orderData) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Missing order data' });
+    }
+    const newOrder = new InProgressOrder(orderData);
+    await newOrder.save();
+    res.status(201).json({ success: true, order: newOrder });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: 'Error creating in-progress order' });
+  }
+});
+
+// GET in progress orders
+router.get('/in-progress', async (req, res) => {
+  const orders = await InProgressOrder.find().sort({ createdAt: -1 });
+  res.json({ success: true, orders });
+});
+
+// GET ready orders
+router.get('/ready', async (req, res) => {
+  const orders = await ReadyOrder.find().sort({ createdAt: -1 });
+  res.json({ success: true, orders });
 });
 
 export default router;
