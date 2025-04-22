@@ -1,4 +1,6 @@
 import express from 'express';
+import type { AuthRequest } from '../middleware/authMiddleware';
+import { authMiddleware } from '../middleware/authMiddleware';
 import { Counter } from '../models/Counter';
 import { InProgressOrder } from '../models/InProgressOrders';
 import { Order } from '../models/Order';
@@ -36,8 +38,30 @@ router.get('/all', async (req, res) => {
   }
 });
 
+// GET orders for the authenticated user
+router.get('/my', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).userId;
+    const orders = await Order.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json({
+      success: true,
+      orders: orders.map((order) => ({
+        ...order,
+        createdAt: new Date(order.createdAt).toISOString(),
+        updatedAt: new Date(order.updatedAt).toISOString(),
+      })),
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: 'Error fetching user orders' });
+  }
+});
+
 // POST new order
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const { ingredients } = req.body;
     if (
@@ -67,6 +91,7 @@ router.post('/', async (req, res) => {
       status: 'created',
       name: 'Custom Burger',
       number: counter.count,
+      user: (req as AuthRequest).userId,
     });
     await newOrder.save();
     res.status(200).json({

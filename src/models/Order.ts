@@ -8,6 +8,7 @@ export interface OrderType extends Document {
   createdAt: Date;
   updatedAt: Date;
   number: number;
+  user: mongoose.Types.ObjectId;
 }
 
 const orderSchema = new Schema<OrderType>(
@@ -23,6 +24,11 @@ const orderSchema = new Schema<OrderType>(
     createdAt: Date,
     updatedAt: Date,
     number: Number,
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
   },
   {
     timestamps: true,
