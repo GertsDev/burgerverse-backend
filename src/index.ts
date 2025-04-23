@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
@@ -12,11 +13,19 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
 
+
+
 const app = express();
 const PORT = process.env.PORT || 3001;
-
+app.use(cookieParser());
+   app.use(express.json());
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: 'http://localhost:4000',
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 const MONGO_URI =
@@ -59,3 +68,5 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 app.listen(PORT, () => {
   console.log(`Express server listening on http://localhost:${PORT}`);
 });
+
+
