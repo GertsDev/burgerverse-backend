@@ -206,7 +206,7 @@ router.post('/password-reset', body('email').isEmail(), async (req, res) => {
         subject: 'Burgerverse Password Reset',
         html: `
           <div style="max-width:420px;margin:40px auto;padding:32px 24px;background:#fff;border-radius:18px;box-shadow:0 2px 16px #0001;font-family:sans-serif;text-align:center">
-            <img src="cid:burgerverse_logo" alt="Burgerverse Logo" style="width:64px;height:64px;margin-bottom:16px;"/>
+            <img src="cid:burgerverse_logo" alt="Burgerverse Logo" style="width:250px;margin-bottom:16px;"/>
             <div style="font-size:2.5rem;font-weight:700;color:#fbbf24;margin-bottom:12px;letter-spacing:2px;">${code}</div>
             <div style="font-size:1rem;color:#222;margin-bottom:18px;">This reset code is valid for 1 hour.</div>
             <div style="font-size:1rem;color:#444;margin-bottom:18px;">You are receiving this because you (or someone else) have requested the reset of the password for your Burgerverse account.</div>
@@ -216,7 +216,7 @@ router.post('/password-reset', body('email').isEmail(), async (req, res) => {
         attachments: [
           {
             filename: 'burgerverse_logo.png',
-            path: __dirname + '/../images/burgerverse_logo.png',
+            path: __dirname + '/../images/burgerverse_logo_mail.png',
             cid: 'burgerverse_logo',
           },
         ],
