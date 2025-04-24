@@ -1,6 +1,5 @@
 // src/routes/auth.ts
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
@@ -193,19 +192,34 @@ router.post('/password-reset', body('email').isEmail(), async (req, res) => {
   const { email } = req.body;
   const user = await User.findOne({ email });
   if (user) {
-    const token = crypto.randomBytes(32).toString('hex');
+    // Generate a 6-digit numeric code as a string
+    const code = String(Math.floor(100000 + Math.random() * 900000));
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-    user.resetPasswordToken = token;
+    user.resetPasswordToken = code;
     user.resetPasswordExpires = expires;
     await user.save();
-    // Send email with token
+    // Send email with code and logo
     try {
       await transporter.sendMail({
         from: 'no-reply@burgerverse.space',
         to: user.email,
-        subject: 'Password Reset',
-        text: `Your password reset code: ${token}`,
-        html: `<p>Your password reset code: <b>${token}</b></p>`,
+        subject: 'Burgerverse Password Reset',
+        html: `
+          <div style="max-width:420px;margin:40px auto;padding:32px 24px;background:#fff;border-radius:18px;box-shadow:0 2px 16px #0001;font-family:sans-serif;text-align:center">
+            <img src="cid:burgerverse_logo" alt="Burgerverse Logo" style="width:64px;height:64px;margin-bottom:16px;"/>
+            <div style="font-size:2.5rem;font-weight:700;color:#fbbf24;margin-bottom:12px;letter-spacing:2px;">${code}</div>
+            <div style="font-size:1rem;color:#222;margin-bottom:18px;">This reset code is valid for 1 hour.</div>
+            <div style="font-size:1rem;color:#444;margin-bottom:18px;">You are receiving this because you (or someone else) have requested the reset of the password for your Burgerverse account.</div>
+            <div style="font-size:0.95rem;color:#888;">If you did not request this, please ignore this email and your password will remain unchanged.</div>
+          </div>
+        `,
+        attachments: [
+          {
+            filename: 'burgerverse_logo.png',
+            path: __dirname + '/../images/burgerverse_logo.png',
+            cid: 'burgerverse_logo',
+          },
+        ],
       });
     } catch (e) {
       // Log but do not reveal to client
@@ -223,6 +237,7 @@ router.post(
   body('token').isString(),
   async (req, res) => {
     const { password, token } = req.body;
+    // Now token is a 6-digit code
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: new Date() },
@@ -230,7 +245,7 @@ router.post(
     if (!user) {
       res
         .status(400)
-        .json({ success: false, message: 'Invalid or expired token' });
+        .json({ success: false, message: 'Invalid or expired code' });
       return;
     }
     user.password = await bcrypt.hash(password, 10);
