@@ -1,5 +1,6 @@
 // src/routes/auth.ts
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
@@ -9,6 +10,7 @@ import {
   JWT_SECRET,
   REFRESH_EXPIRES_IN,
 } from '../config/auth';
+import transporter from '../config/mailer';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
 import User from '../models/User';
 
@@ -17,7 +19,7 @@ const router = Router();
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET is not defined in environment variables');
 }
-console.log(process.env.JWT_SECRET)
+console.log(process.env.JWT_SECRET);
 
 // the shapes of our request‑bodies:
 interface RegisterBody {
@@ -183,6 +185,59 @@ router.patch(
       return;
     }
     res.json({ success: true, user: { email: user.email, name: user.name } });
+  }
+);
+
+// ─── PASSWORD RESET REQUEST ────────────────────────────────────────────────
+router.post('/password-reset', body('email').isEmail(), async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (user) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = expires;
+    await user.save();
+    // Send email with token
+    try {
+      await transporter.sendMail({
+        from: 'no-reply@burgerverse.space',
+        to: user.email,
+        subject: 'Password Reset',
+        text: `Your password reset code: ${token}`,
+        html: `<p>Your password reset code: <b>${token}</b></p>`,
+      });
+    } catch (e) {
+      // Log but do not reveal to client
+      console.error('Error sending reset email:', e);
+    }
+  }
+  // Always respond success for security
+  res.json({ success: true });
+});
+
+// ─── PASSWORD RESET SUBMIT ────────────────────────────────────────────────
+router.post(
+  '/password-reset/reset',
+  body('password').isLength({ min: 6 }),
+  body('token').isString(),
+  async (req, res) => {
+    const { password, token } = req.body;
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: new Date() },
+    });
+    if (!user) {
+      res
+        .status(400)
+        .json({ success: false, message: 'Invalid or expired token' });
+      return;
+    }
+    user.password = await bcrypt.hash(password, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+    res.json({ success: true });
   }
 );
 
