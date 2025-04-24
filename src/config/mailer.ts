@@ -6,12 +6,12 @@ dotenv.config();
 // For development: use ethereal.email (auto-generated test account)
 // In production, replace with real SMTP credentials
 const transporter = nodemailer.createTransport({
-  host: 'smtp.migadu.com',
+  host: 'mail.smtp2go.com',
   port: 465,
   secure: true,
   auth: {
-    user: process.env.MIGADU_USER,
-    pass: process.env.MIGADU_PASS
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS
   },
 });
 
