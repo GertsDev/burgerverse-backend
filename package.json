@@ -34,9 +34,11 @@
     "@types/node": "^22.14.1",
     "@types/nodemailer": "^6.4.17",
     "@types/qs": "^6.9.18",
+    "clinic": "^13.0.0",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }
 }

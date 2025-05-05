@@ -8,29 +8,48 @@ import { ReadyOrder } from '../models/ReadyOrders';
 
 const router = express.Router();
 
-// GET all orders
+// GET all orders with pagination
 router.get('/all', async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 }).lean();
-    const total = await Order.countDocuments();
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 20; // Default limit to 20
+    const skip = (page - 1) * limit;
+
+    const ordersQuery = Order.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+    const totalQuery = Order.countDocuments();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const totalToday = await Order.countDocuments({
+    const totalTodayQuery = Order.countDocuments({
       createdAt: { $gte: today, $lt: tomorrow },
     });
+
+    // Execute queries in parallel
+    const [orders, total, totalToday] = await Promise.all([
+      ordersQuery.exec(),
+      totalQuery.exec(),
+      totalTodayQuery.exec(),
+    ]);
+
     res.json({
       success: true,
       orders: orders.map((order) => ({
         ...order,
-        createdAt: new Date(order.createdAt).toISOString(),
+        createdAt: new Date(order.createdAt).toISOString(), // Keep date conversion for consistency if frontend expects it
         updatedAt: new Date(order.updatedAt).toISOString(),
       })),
       total,
       totalToday,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
     });
   } catch (error) {
+    console.error('Error fetching all orders:', error); // Log the error
     res.status(500).json({
       success: false,
       message: 'Error fetching orders',
